@@ -28,6 +28,10 @@ int OnInit()
 //--- indicator buffers mapping
    VariableCorner = Corner;
    EventSetTimer(1);
+   
+   ObjectCreate(objectName, OBJ_LABEL, 0, 0, 0);
+   ObjectSetText(objectName, "", FontSize, NULL, FontColor);
+   
 //---
    return(INIT_SUCCEEDED);
   }
@@ -90,8 +94,7 @@ void OnTimer()
    
    displayText += DoubleToStr(sec,0) + "s";
    
-	ObjectCreate(objectName, OBJ_LABEL, 0, 0, 0);
-	ObjectSetText(objectName, displayText, FontSize, NULL, FontColor);
+   ObjectSetText(objectName, displayText, FontSize, NULL, FontColor);
 	ObjectSet(objectName, OBJPROP_XDISTANCE, LocationX);
 	ObjectSet(objectName, OBJPROP_YDISTANCE, LocationY);
 	ObjectSet(objectName, OBJPROP_CORNER, VariableCorner);
