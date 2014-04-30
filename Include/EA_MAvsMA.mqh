@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                                    EA_MAvsMA.mqh |
 //|                                             Copyright 2014, eita |
-//|                                                                  |
+//|                                                        Ver:1.01  |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
@@ -33,7 +33,7 @@ int EA_getTrendOfMAvsMA( int timeframe, int shift=0 )
    
    if ( baceMA > 0.0 ) {
       double diffRate = ((currentMA - baceMA) / baceMA) * 100.0;
-      trend = judgeTrend( diffRate );
+      trend = judgeTrendOfMAvsMA( diffRate );
    }
    else {
       trend = EA_TREND_STAY;
@@ -45,7 +45,7 @@ int EA_getTrendOfMAvsMA( int timeframe, int shift=0 )
 //+------------------------------------------------------------------+
 //| Judge trend                                                      |
 //+------------------------------------------------------------------+
-int judgeTrend( double diffRate )
+int judgeTrendOfMAvsMA( double diffRate )
 {
    int result = EA_TREND_STAY;
 
