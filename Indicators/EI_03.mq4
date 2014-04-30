@@ -5,13 +5,13 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.00"
+#property version   "1.01"
 #property strict
 #property indicator_separate_window
 #property indicator_minimum 1
-#property indicator_maximum 2
-#property indicator_buffers 6
-#property indicator_plots   6
+#property indicator_maximum 2.5
+#property indicator_buffers 9
+#property indicator_plots   9
 
 //--- plot ADX_UP
 #property indicator_label1  "ADX_UP"
@@ -51,6 +51,25 @@
 #property indicator_style6  STYLE_SOLID
 #property indicator_width6  1
 
+//--- plot MAvsMA_UP
+#property indicator_label7  "MAvsMA_UP"
+#property indicator_type7   DRAW_ARROW
+#property indicator_color7  clrOrangeRed
+#property indicator_style7  STYLE_SOLID
+#property indicator_width7  1
+//--- plot MAvsMA_DOWN
+#property indicator_label8  "MAvsMA_DOWN"
+#property indicator_type8   DRAW_ARROW
+#property indicator_color8  clrRoyalBlue
+#property indicator_style8  STYLE_SOLID
+#property indicator_width8  1
+//--- plot MAvsMA_WAIT
+#property indicator_label9  "MAvsMA_WAIT"
+#property indicator_type9   DRAW_ARROW
+#property indicator_color9  clrYellow
+#property indicator_style9  STYLE_SOLID
+#property indicator_width9  1
+
 //--- indicator buffers
 double         ADX_UP_Buffer[];
 double         ADX_DOWN_Buffer[];
@@ -58,18 +77,25 @@ double         ADX_WAIT_Buffer[];
 double         CCI_UP_Buffer[];
 double         CCI_DOWN_Buffer[];
 double         CCI_WAIT_Buffer[];
+double         MAvsMA_UP_Buffer[];
+double         MAvsMA_DOWN_Buffer[];
+double         MAvsMA_WAIT_Buffer[];
 
 //--- object name
 string obj_ADX = "object_title_ADX";
 string obj_CCI = "object_title_CCI";
+string obj_MAvsMA = "object_title_MAvsMA";
 
 //--- defines
-#define ADX_TITLE_POS   (1.25)
-#define ADX_LINE_POS    (1.2)
-#define CCI_TITLE_POS   (1.75)
-#define CCI_LINE_POS    (1.7)
+#define ADX_TITLE_POS      (1.25)
+#define ADX_LINE_POS       (1.2)
+#define CCI_TITLE_POS      (1.75)
+#define CCI_LINE_POS       (1.7)
+#define MAVSMA_TITLE_POS   (2.25)
+#define MAVSMA_LINE_POS    (2.2)
 
 //--- import function
+#include <EA_MAvsMA.mqh>
 #include <EA_ADX.mqh>
 #include <EA_CCI.mqh>
 
@@ -85,7 +111,10 @@ int OnInit()
    SetIndexBuffer(3,CCI_UP_Buffer);
    SetIndexBuffer(4,CCI_DOWN_Buffer);
    SetIndexBuffer(5,CCI_WAIT_Buffer);
-   
+   SetIndexBuffer(6,MAvsMA_UP_Buffer);
+   SetIndexBuffer(7,MAvsMA_DOWN_Buffer);
+   SetIndexBuffer(8,MAvsMA_WAIT_Buffer);
+
 //--- setting a code from the Wingdings charset as the property of PLOT_ARROW
    SetIndexStyle(0, DRAW_ARROW, STYLE_SOLID, 1, clrOrangeRed);
    SetIndexArrow(0,110);
@@ -99,7 +128,12 @@ int OnInit()
    SetIndexArrow(4,110);
    SetIndexStyle(5, DRAW_ARROW, STYLE_SOLID, 1, clrYellow);
    SetIndexArrow(5,110);
-
+   SetIndexStyle(6, DRAW_ARROW, STYLE_SOLID, 1, clrOrangeRed);
+   SetIndexArrow(6,110);
+   SetIndexStyle(7, DRAW_ARROW, STYLE_SOLID, 1, clrRoyalBlue);
+   SetIndexArrow(7,110);
+   SetIndexStyle(8, DRAW_ARROW, STYLE_SOLID, 1, clrYellow);
+   SetIndexArrow(8,110);
 //---
    return(INIT_SUCCEEDED);
   }
@@ -139,6 +173,7 @@ int OnCalculate(const int rates_total,
    
       drawADX(i);
       drawCCI(i);
+      drawMAvsMA(i);
 
    } 
 //--- return value of prev_calculated for next call
@@ -158,13 +193,19 @@ void drawTitle()
       ObjectCreate(obj_CCI, OBJ_TEXT, WindowOnDropped(), 0, 0);
    }
 
+   if ( ObjectFind(obj_MAvsMA) < 0 ) {
+      ObjectCreate(obj_MAvsMA, OBJ_TEXT, WindowOnDropped(), 0, 0);
+   }
+
    ObjectSetText(obj_ADX, "ADX", 10, NULL, White);
    ObjectSetText(obj_CCI, "CCI", 10, NULL, White);
+   ObjectSetText(obj_MAvsMA, "MvM", 10, NULL, White);
 
    // setting object
    datetime dtTitle = Time[0] + ((Time[0]-Time[1])*1);
    ObjectMove(obj_ADX, 0, dtTitle, ADX_TITLE_POS);
    ObjectMove(obj_CCI, 0, dtTitle, CCI_TITLE_POS);
+   ObjectMove(obj_MAvsMA, 0, dtTitle, MAVSMA_TITLE_POS);
 }
 
 //+------------------------------------------------------------------+
@@ -221,4 +262,30 @@ void drawCCI(int shift)
    }
 }
 
+//+------------------------------------------------------------------+
+//| drawing line of MAvsMA                                           |
+//+------------------------------------------------------------------+
+void drawMAvsMA(int shift)
+{
+   int mavsmaTrend = EA_getTrendOfMAvsMA( 0, shift );
+
+   switch (mavsmaTrend)
+   {
+      case EA_TREND_UP:
+         MAvsMA_UP_Buffer[shift] = MAVSMA_LINE_POS;
+         MAvsMA_DOWN_Buffer[shift] = EMPTY_VALUE;
+         MAvsMA_WAIT_Buffer[shift] = EMPTY_VALUE;
+         break;
+      case EA_TREND_DOWN:
+         MAvsMA_UP_Buffer[shift] = EMPTY_VALUE;
+         MAvsMA_DOWN_Buffer[shift] = MAVSMA_LINE_POS;
+         MAvsMA_WAIT_Buffer[shift] = EMPTY_VALUE;
+         break;
+      default:
+         MAvsMA_UP_Buffer[shift] = EMPTY_VALUE;
+         MAvsMA_DOWN_Buffer[shift] = EMPTY_VALUE;
+         MAvsMA_WAIT_Buffer[shift] = MAVSMA_LINE_POS;
+         break;
+   }
+}
 //+------------------------------------------------------------------+
