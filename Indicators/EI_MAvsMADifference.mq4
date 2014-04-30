@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.00"
+#property version   "1.01"
 #property strict
 #property indicator_separate_window
 #property indicator_buffers 3
@@ -39,7 +39,7 @@ input double prm_UP_LowerLimit = 0.001;
 input double prm_UP_UpperLimit = 0.01;
 input double prm_Down_LowerLimit = -0.001;
 input double prm_Down_UpperLimit = -0.01;
-input bool prmAlert = True;
+input bool prmAlert = False;
 
 //--- indicator buffers
 double         differenceRateWaitBuffer[];
@@ -153,7 +153,9 @@ int OnCalculate(const int rates_total,
       }
    }
    
-   checkAlert();
+   if ( prmAlert == True ) {
+      checkAlert();
+   }
    
 //--- return value of prev_calculated for next call
    return(rates_total);
