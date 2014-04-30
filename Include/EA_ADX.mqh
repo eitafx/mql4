@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                                       EA_ADX.mqh |
 //|                                             Copyright 2014, eita |
-//|                                                                  |
+//|                                                        Ver:1.01  |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
@@ -18,7 +18,14 @@ input int      prm_EA_ADX_trend_period = 14;
 //+------------------------------------------------------------------+
 //| Get the trend of ADX                                             |
 //+------------------------------------------------------------------+
-int EA_getTrendOfADX( int timeframe, int depth, int shift=0 )
+int EA_getTrendOfADX( int timeframe, int shift=0 )
+{
+   int resTrend = EA_getTrendOfADXwithDepth( timeframe, shift, 2 );
+   
+   return resTrend;
+}
+
+int EA_getTrendOfADXwithDepth( int timeframe, int shift, int depth )
 {   
    int idx;
    int checkPos = shift;

@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.01"
+#property version   "1.02"
 #property strict
 #property indicator_separate_window
 #property indicator_minimum 1
@@ -213,7 +213,7 @@ void drawTitle()
 //+------------------------------------------------------------------+
 void drawADX(int shift)
 {
-   int adxTrend = EA_getTrendOfADX( 0, 2, shift );
+   int adxTrend = EA_getTrendOfADX( 0, shift );
  
    switch (adxTrend)
    {
@@ -240,7 +240,7 @@ void drawADX(int shift)
 //+------------------------------------------------------------------+
 void drawCCI(int shift)
 {
-   int cciTrend = EA_getTrendOfCCI( 0, 3, shift );
+   int cciTrend = EA_getTrendOfCCI( 0, shift );
 
    switch (cciTrend)
    {

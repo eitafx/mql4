@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
 //|                                                       EA_CCI.mqh |
 //|                                             Copyright 2014, eita |
-//|                                                                  |
+//|                                                        Ver:1.01  |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
@@ -18,7 +18,14 @@ input int      prm_EA_CCI_trend_period = 14;
 //+------------------------------------------------------------------+
 //| Get the trend of CCI                                             |
 //+------------------------------------------------------------------+
-int EA_getTrendOfCCI( int timeframe, int depth, int shift=0 )
+int EA_getTrendOfCCI( int timeframe, int shift=0 )
+{
+   int resTrend = EA_getTrendOfCCIwithDepth( timeframe, shift, 3 );
+   
+   return resTrend;
+}
+
+int EA_getTrendOfCCIwithDepth( int timeframe, int shift, int depth )
 {
    int upTrend = EA_TREND_UP;
    int downTrend = EA_TREND_DOWN;
