@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.01"
+#property version   "1.02"
 #property strict
 #property indicator_chart_window
 #property indicator_buffers 6
@@ -187,10 +187,10 @@ void calcTrendRate( int& upTrand,int& downTrand, int shift )
    const double chackNum = 2.0;
 
    // ***** get trend information *****
-   int adxTrend = EA_getTrendOfADX( 0, 2, shift );
+   int adxTrend = EA_getTrendOfADX( 0, shift );
    countTrend( adxTrend, upCount, downCount );
 
-   int cciTrend = EA_getTrendOfCCI( 0, 3, shift );
+   int cciTrend = EA_getTrendOfCCI( 0, shift );
    countTrend( cciTrend, upCount, downCount );
    
    // ***** calcarate trend rate *****
