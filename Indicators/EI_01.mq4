@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.00"
+#property version   "1.01"
 #property strict
 #property indicator_chart_window
 #property indicator_buffers 9
@@ -13,7 +13,7 @@
 //--- plot cur_short
 #property indicator_label1  "cur_short"
 #property indicator_type1   DRAW_ARROW
-//#property indicator_type1   DRAW_LINE
+#property indicator_type1   DRAW_LINE
 #property indicator_color1  clrOrangeRed
 #property indicator_style1  STYLE_SOLID
 #property indicator_width1  2
