@@ -69,7 +69,7 @@ double         mt1hourBuffer[];
 double         mt4hourBuffer[];
 double         mt1dayBuffer[];
 
-#include <EA_lib.mqh>
+#include <EA_stdlib.mqh>
 #include <EA_TrendCoefficient.mqh>
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |

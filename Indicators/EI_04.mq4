@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.00"
+#property version   "1.01"
 #property strict
 #property indicator_separate_window
 #property indicator_minimum 1
