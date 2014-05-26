@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.00"
+#property version   "1.01"
 #property strict
 #property indicator_separate_window
 #property indicator_minimum 0
@@ -17,6 +17,15 @@ input bool prmDateDisplay = True;
 input bool prmClockDisplay = True;
 input int prmClockSize = 18;
 input color prmClockColor = clrWhite;
+input int prmTokyoStart = 9;
+input int prmTokyoEnd = 15;
+input color prmTokyoColor = 0x400000;
+input int prmLondonStart = 16;
+input int prmLondonEnd = 24;
+input color prmLondonColor = 0x004000;
+input int prmNewYorkStart = 22;
+input int prmNewYorkEnd = 7;
+input color prmNewYorkColor = 0x000040;
 
 input string Attention1 = "The following is  advanced settings.";
 input int prmDispPeriod_M1 = 600;
@@ -32,11 +41,16 @@ input int prmDispTiming_H1 = 0;
 input double prmTimePosition = 1.0;
 input double prmDatePosition = 0.7;
 
+
 #define PERIOD_H24   (86400)
 
 string obj_clockDisplay = "obj_clockdisplay";
 string obj_time = "obj_time_";
 string obj_day = "obj_day_";
+string obj_zone = "obj_zone";
+string obj_zone_tyo = "obj_zone_tyo_";
+string obj_zone_lon = "obj_zone_lon_";
+string obj_zone_ny = "obj_zone_ny_";
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -44,6 +58,7 @@ string obj_day = "obj_day_";
 int OnInit()
 {
 //--- indicator buffers mapping
+    deleteAllZoneObject();
    ObjectsDeleteAll(WindowOnDropped());
 
    IndicatorShortName(" ");
@@ -60,7 +75,8 @@ int OnInit()
 void OnDeinit(const int reason)
 {
 //---
-   ObjectsDeleteAll(WindowOnDropped());
+    deleteAllZoneObject();
+    ObjectsDeleteAll(WindowOnDropped());
 }
 
 //+------------------------------------------------------------------+
@@ -82,11 +98,15 @@ int OnCalculate(const int rates_total,
     if(counted_bars<0) return(-1);
     if(counted_bars>0) counted_bars--;
     int limit=Bars-counted_bars;
-    
-    for( int i=0; i<limit; i++ ) {
-      drawTime(i);
-    }
 
+    if ( limit >= Bars ) {    
+        for( int i=0; i<limit; i++ ) {
+          drawObject(i);
+        }
+    }
+    else {
+        drawObject(0);
+    }
 //--- return value of prev_calculated for next call
    return(rates_total);
 }
@@ -106,22 +126,22 @@ void OnTimer()
 }
 
 //+------------------------------------------------------------------+
-//| display the clock                                                |
+//| draw objects                                                     |
 //+------------------------------------------------------------------+
-void drawTime(const int shift)
+void drawObject(const int shift)
 {
    datetime diffTime;
-   datetime jpnTime;
+   datetime curShitTime;
    datetime preShiftTime;
 
    if ( prmAutoDiffTime == True ) {
       diffTime = (TimeLocal()-TimeCurrent()) / 3600;
       diffTime *= 3600;
-      jpnTime = Time[shift]+diffTime;
+      curShitTime = Time[shift]+diffTime;
    }
    else {
       diffTime = prmManualDiffTime * 3600;
-      jpnTime = Time[shift] + diffTime;
+      curShitTime = Time[shift] + diffTime;
    }
 
    if ( (ArraySize(Time)-1) > shift ) {
@@ -130,35 +150,184 @@ void drawTime(const int shift)
    else {
       preShiftTime = 0;
    }
+   
+   drawTime( shift, curShitTime, preShiftTime );
+   drawZone( shift, curShitTime, preShiftTime );
+}
 
+//+------------------------------------------------------------------+
+//| display the Time                                                |
+//+------------------------------------------------------------------+
+void drawZone( const int shift,
+               const datetime curShiftTime,
+               const datetime preShiftTime )
+{
+   switch (Period())
+   {
+      case PERIOD_M5:
+      case PERIOD_M15:
+      case PERIOD_M30:
+      case PERIOD_H1:
+        drawZone( shift, curShiftTime, preShiftTime, obj_zone_tyo, prmTokyoStart, prmTokyoEnd, prmTokyoColor );
+        drawZone( shift, curShiftTime, preShiftTime, obj_zone_lon, prmLondonStart, prmLondonEnd, prmLondonColor );
+        drawZone( shift, curShiftTime, preShiftTime, obj_zone_ny, prmNewYorkStart, prmNewYorkEnd, prmNewYorkColor );
+         break;
+      default:
+         break;
+   }
+}
+
+//+------------------------------------------------------------------+
+//| display the Time                                                 |
+//+------------------------------------------------------------------+
+void drawZone( const int shift,
+               const datetime curShiftTime,
+               const datetime preShiftTime,
+               const string zoneName,
+               const int zoneStart,
+               const int zoneEnd,
+               const color zoneColor )
+{
+    MqlDateTime curMqlTime, preMqlTime;
+    TimeToStruct(curShiftTime,curMqlTime);
+    TimeToStruct(preShiftTime,preMqlTime);
+    
+    if (zoneStart != zoneEnd) {
+        int calcStartTime = zoneStart;
+        int calcEndTime = zoneEnd;;
+        int calcCurHour = curMqlTime.hour;
+        int calcPreHour = preMqlTime.hour;
+        datetime calcDateTime = curShiftTime;
+        if ( zoneStart > zoneEnd ) {
+            calcEndTime = zoneEnd + 24;
+            if (curMqlTime.hour>=0 && curMqlTime.hour<=(zoneEnd)) {
+                calcCurHour += 24;
+                calcPreHour += 24;
+                calcDateTime -= (3600*24);
+            }            
+        }
+
+// start debug
+//Print( "calcCurHour=", calcCurHour, " calcPreHour=", calcPreHour, " calcStartTime=", calcStartTime, " calcEndTime=", calcEndTime, " curMqlTime.hour=", curMqlTime.hour, " preMqlTime.hour=", preMqlTime.hour );        
+// end debug
+        if ( (calcCurHour >= calcStartTime) &&
+             (calcCurHour <= calcEndTime && calcPreHour<(calcEndTime)) ){
+             
+            bool overFlag = False;
+            if (calcCurHour != calcEndTime) {
+                overFlag = True;
+            }
+            createZoneObject( shift, calcDateTime, zoneName, zoneColor, overFlag );
+        }
+    }
+    else {
+        // no action
+    }
+}
+
+//+------------------------------------------------------------------+
+//| create a rectangle object for zone                               |
+//+------------------------------------------------------------------+
+void createZoneObject ( const int shift,
+                        const datetime time,
+                        const string objName,
+                        const color objColor,
+                        const bool overFlag )
+{
+
+    string strDate = TimeToStr(time, TIME_DATE);
+    string strObjectName = StringConcatenate( objName, strDate );
+    
+    double high = High[ArrayMaximum( High )];
+    double low = Low[ArrayMinimum( Low )];
+    
+    if ( ObjectFind(strObjectName) < 0 ) {
+        ObjectCreate(strObjectName, OBJ_RECTANGLE, 0, 0, 0);
+        ObjectSet(strObjectName, OBJPROP_COLOR, objColor);
+        ObjectMove(strObjectName, 1, Time[shift], high);
+        ObjectMove(strObjectName, 0, Time[shift], low);
+    }
+   
+    if ( shift == 0 ) {
+        if ( overFlag != True ) {
+            ObjectMove(strObjectName, 0, Time[shift], low);
+        }
+        else {
+            ObjectMove(strObjectName, 0, (Time[shift] + PeriodSeconds()), low);
+        }
+    }
+    else {
+        ObjectMove(strObjectName, 1, Time[shift], high);
+    }
+}
+
+//+------------------------------------------------------------------+
+//| delete rectangle objects for zone                                |
+//+------------------------------------------------------------------+
+void deleteAllZoneObject()
+{    
+    while(1)
+    {
+        Print ("Delete loop");
+        int obj_total = ObjectsTotal();
+        string name;
+        for(int i=0;i<obj_total;i++) {
+            name =ObjectName(i);
+            if ( StringFind( name, obj_zone, 0 ) != -1  ) {
+                bool res = ObjectDelete( name );
+            }
+        }
+        
+        int cnt = 0;
+        obj_total = ObjectsTotal();
+        for(int i=0;i<obj_total;i++) {
+            name =ObjectName(i);
+            if ( StringFind( name, obj_zone, 0 ) == -1  ) {
+                cnt++;
+            }
+        }
+        
+        if (obj_total == cnt) {
+            break;
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| display the Time                                                |
+//+------------------------------------------------------------------+
+void drawTime( const int shift,
+               const datetime curShiftTime,
+               const datetime preShiftTime )
+{
    switch (Period())
    {
       case PERIOD_M1:
-         drawTime_M1( shift, jpnTime );
+         drawTime_M1( shift, curShiftTime );
          break;
       case PERIOD_M5:
-         drawTime_M5( shift, jpnTime );
+         drawTime_M5( shift, curShiftTime );
          break;
       case PERIOD_M15:
-         drawTime_M15( shift, jpnTime );
+         drawTime_M15( shift, curShiftTime );
          break;
       case PERIOD_M30:
-         drawTime_M30( shift, jpnTime );
+         drawTime_M30( shift, curShiftTime );
          break;
       case PERIOD_H1:
-         drawTime_H1( shift, jpnTime );
+         drawTime_H1( shift, curShiftTime );
          break;
       case PERIOD_H4:
-         drawTime_H4( shift, jpnTime );
+         drawTime_H4( shift, curShiftTime );
          break;
       case PERIOD_D1:
-         drawTime_D1( shift, jpnTime, preShiftTime );
+         drawTime_D1( shift, curShiftTime, preShiftTime );
          break;
       case PERIOD_W1:
-         drawTime_W1( shift, jpnTime );
+         drawTime_W1( shift, curShiftTime );
          break;
       case PERIOD_MN1:
-         drawTime_MN1( shift, jpnTime );
+         drawTime_MN1( shift, curShiftTime );
          break;
       default:
          break;
@@ -494,7 +663,52 @@ void deleteClock()
    ObjectDelete(obj_clockDisplay);
 }
 
+/*
+//+------------------------------------------------------------------+
+//| class for controlling the datetime                               |
+//+------------------------------------------------------------------+
+class CDateTime
+{
+private:
+  datetime  m_dateTime;
 
+public:
+  CDateTime( datetime time );
+  int GetYear();
+  int GetMonth();
+  int GetDay();
+  int GetHour();
+  int GetMin();
+  int GetSec();
+};
 
- 
+CDateTime::CDateTime(datetime time)
+{
+    m_dateTime = time;
+}
+int CDateTime::GetYear()
+{
+    return TimeYear[m_dateTime];
+}
+int CDateTime::GetMonth()
+{
+    return TimeMonth[m_dateTime];
+}
+int CDateTime::GetDay()
+{
+    return TimeDay[m_dateTime];
+}
+int CDateTime::GetHour()
+{
+    return TimeHour[m_dateTime];
+}
+int CDateTime::GetMin()
+{
+    return TimeMinute[m_dateTime];
+}
+int CDateTime::GetSec()
+{
+    return TimeSeconds[m_dateTime];
+}
+*/
 //+------------------------------------------------------------------+
