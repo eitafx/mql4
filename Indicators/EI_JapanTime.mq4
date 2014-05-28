@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2014, eita"
 #property link      ""
-#property version   "1.02"
+#property version   "1.03"
 #property strict
 #property indicator_separate_window
 #property indicator_minimum 0
@@ -164,15 +164,15 @@ void drawObject(const int shift)
     TimeToStruct(preShiftTime,preMqlTime);
     
     drawTime( shift, curMqlTime, preMqlTime );
-    drawZone( shift, curShiftTime, preShiftTime );
+    drawZone( shift, curMqlTime, preMqlTime );
 }
 
 //+------------------------------------------------------------------+
 //| display the Time                                                |
 //+------------------------------------------------------------------+
 void drawZone( const int shift,
-               const datetime curShiftTime,
-               const datetime preShiftTime )
+               const MqlDateTime& curMqlTime,
+               const MqlDateTime& preMqlTime )
 {
    switch (Period())
    {
@@ -180,9 +180,10 @@ void drawZone( const int shift,
       case PERIOD_M15:
       case PERIOD_M30:
       case PERIOD_H1:
-        drawZone( shift, curShiftTime, preShiftTime, obj_zone_tyo, prmTokyoStart, prmTokyoEnd, prmTokyoColor );
-        drawZone( shift, curShiftTime, preShiftTime, obj_zone_lon, prmLondonStart, prmLondonEnd, prmLondonColor );
-        drawZone( shift, curShiftTime, preShiftTime, obj_zone_ny, prmNewYorkStart, prmNewYorkEnd, prmNewYorkColor );
+      case PERIOD_H4:
+        drawZoneObject( shift, curMqlTime, preMqlTime, obj_zone_tyo, prmTokyoStart, prmTokyoEnd, prmTokyoColor );
+        drawZoneObject( shift, curMqlTime, preMqlTime, obj_zone_lon, prmLondonStart, prmLondonEnd, prmLondonColor );
+        drawZoneObject( shift, curMqlTime, preMqlTime, obj_zone_ny, prmNewYorkStart, prmNewYorkEnd, prmNewYorkColor );
          break;
       default:
          break;
@@ -190,46 +191,54 @@ void drawZone( const int shift,
 }
 
 //+------------------------------------------------------------------+
-//| display the Time                                                 |
+//| daraw the zone object                                            |
 //+------------------------------------------------------------------+
-void drawZone( const int shift,
-               const datetime curShiftTime,
-               const datetime preShiftTime,
-               const string zoneName,
-               const int zoneStart,
-               const int zoneEnd,
-               const color zoneColor )
+void drawZoneObject( const int shift,
+                     const MqlDateTime& curMqlTime,
+                     const MqlDateTime& preMqlTime,
+                     const string zoneName,
+                     const int zoneStart,
+                     const int zoneEnd,
+                     const color zoneColor )
 {
-    MqlDateTime curMqlTime, preMqlTime;
-    TimeToStruct(curShiftTime,curMqlTime);
-    TimeToStruct(preShiftTime,preMqlTime);
-    
-    if (zoneStart != zoneEnd) {
-        int calcStartTime = zoneStart;
-        int calcEndTime = zoneEnd;;
-        int calcCurHour = curMqlTime.hour;
-        int calcPreHour = preMqlTime.hour;
-        datetime calcDateTime = curShiftTime;
-        if ( zoneStart > zoneEnd ) {
-            calcEndTime = zoneEnd + 24;
-            if (curMqlTime.hour>=0 && curMqlTime.hour<=(zoneEnd)) {
-                calcCurHour += 24;
-                calcPreHour += 24;
-                calcDateTime -= (3600*24);
-            }            
-        }
+    int preHour = preMqlTime.hour;
+    if ( preMqlTime.day != curMqlTime.day ) {
+        preHour -= 24;
+    }
 
-// start debug
-//Print( "calcCurHour=", calcCurHour, " calcPreHour=", calcPreHour, " calcStartTime=", calcStartTime, " calcEndTime=", calcEndTime, " curMqlTime.hour=", curMqlTime.hour, " preMqlTime.hour=", preMqlTime.hour );        
-// end debug
-        if ( (calcCurHour >= calcStartTime) &&
-             (calcCurHour <= calcEndTime && calcPreHour<(calcEndTime)) ){
+    int preMin = preMqlTime.min;
+    if ( preMqlTime.hour != curMqlTime.hour ) {
+        preMin -= 60;
+    }
+
+    if (zoneStart != zoneEnd) {
              
-            bool overFlag = False;
-            if (calcCurHour != calcEndTime) {
-                overFlag = True;
+        if ( ((preHour < zoneStart) && (zoneStart <= curMqlTime.hour)) &&
+             ((preMin < 0) && (0 <= curMqlTime.min)) ) {
+             
+             //Print( "preHour=", preHour, " zoneStart=", zoneStart,  " curMqlTime.hour=", curMqlTime.hour, " curDate=", TimeToStr(Time[shift], TIME_DATE), " preDate=", TimeToStr(Time[shift+1], TIME_DATE) );
+
+            int width = 0;
+            if (zoneStart < zoneEnd) {
+                width = (zoneEnd - zoneStart) * 3600;
             }
-            createZoneObject( shift, calcDateTime, zoneName, zoneColor, overFlag );
+            else {
+                width = (zoneEnd - (zoneStart-24)) * 3600;
+            }
+            
+            int diff = 0;
+            if(zoneStart <= curMqlTime.hour) {
+                diff = (curMqlTime.hour - zoneStart) * 3600;
+            }
+            else {
+                diff = (curMqlTime.hour - (zoneStart-24)) * 3600;
+            }
+
+            if(0 <= curMqlTime.min) {
+                diff += curMqlTime.min * 60;
+            }
+
+            createZoneObject( shift, (width-diff), zoneName, zoneColor );
         }
     }
     else {
@@ -241,12 +250,11 @@ void drawZone( const int shift,
 //| create a rectangle object for zone                               |
 //+------------------------------------------------------------------+
 void createZoneObject ( const int shift,
-                        const datetime time,
+                        const int width,
                         const string objName,
-                        const color objColor,
-                        const bool overFlag )
+                        const color objColor )
 {
-    string strDate = TimeToStr(time, TIME_DATE);
+    string strDate = TimeToStr(Time[shift], TIME_DATE);
     string strObjectName = StringConcatenate( objName, strDate );
     
     double high = High[ArrayMaximum( High )];
@@ -256,19 +264,7 @@ void createZoneObject ( const int shift,
         ObjectCreate(strObjectName, OBJ_RECTANGLE, 0, 0, 0);
         ObjectSet(strObjectName, OBJPROP_COLOR, objColor);
         ObjectMove(strObjectName, 1, Time[shift], high);
-        ObjectMove(strObjectName, 0, Time[shift], low);
-    }
-   
-    if ( shift == 0 ) {
-        if ( overFlag != True ) {
-            ObjectMove(strObjectName, 0, Time[shift], low);
-        }
-        else {
-            ObjectMove(strObjectName, 0, (Time[shift] + PeriodSeconds()), low);
-        }
-    }
-    else {
-        ObjectMove(strObjectName, 1, Time[shift], high);
+        ObjectMove(strObjectName, 0, Time[shift] + width, low);
     }
 }
 
